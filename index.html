@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema B2B - Gestão de Pedidos</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Dados fictícios para demonstração
+        const MOCK_DATA = {
+            users: [
+                { id: 1, email: 'cliente@empresa.com', password: 'cliente123', role: 'cliente', nome: 'João Silva', empresa: 'Tech Solutions LTDA' },
+                { id: 2, email: 'admin@sistema.com', password: 'admin123', role: 'admin', nome: 'Maria Administradora', empresa: 'Sistema B2B' }
+            ],
+            products: [
+                { id: 1, nome: 'Notebook Dell Inspiron 15', categoria: 'Informática', preco: 3499.99, estoque: 45, descricao: 'Intel Core i5, 8GB RAM, SSD 256GB', imagem: '💻' },
+                { id: 2, nome: 'Monitor LG UltraWide 29"', categoria: 'Informática', preco: 1299.99, estoque: 32, descricao: 'Full HD, IPS, 75Hz', imagem: '🖥️' },
+                { id: 3, nome: 'Mouse Logitech MX Master 3', categoria: 'Periféricos', preco: 449.99, estoque: 128, descricao: 'Sem fio, 7 botões programáveis', imagem: '🖱️' },
+                { id: 4, nome: 'Teclado Mecânico Keychron K2', categoria: 'Periféricos', preco: 699.99, estoque: 67, descricao: 'Switch Brown, RGB, Bluetooth', imagem: '⌨️' },
+                { id: 5, nome: 'Webcam Logitech C920', categoria: 'Periféricos', preco: 399.99, estoque: 89, descricao: 'Full HD 1080p, 30fps', imagem: '📹' },
+                { id: 6, nome: 'Headset HyperX Cloud II', categoria: 'Áudio', preco: 549.99, estoque: 54, descricao: '7.1 virtual, microfone removível', imagem: '🎧' },
+                { id: 7, nome: 'SSD Samsung 970 EVO 1TB', categoria: 'Armazenamento', preco: 899.99, estoque: 76, descricao: 'NVMe M.2, 3500MB/s leitura', imagem: '💾' },
+                { id: 8, nome: 'Impressora HP LaserJet Pro', categoria: 'Impressão', preco: 1899.99, estoque: 23, descricao: 'Monocromática, Wi-Fi, Duplex', imagem: '🖨️' },
+            ],
+            orders: [
+                { 
+                    id: 1001, 
+                    clienteId: 1, 
+                    data: '2026-01-20', 
+                    status: 'entregue', 
+                    total: 5249.97,
+                    items: [
+                        { produtoId: 1, quantidade: 1, preco: 3499.99 },
+                        { produtoId: 6, quantidade: 2, preco: 549.99 }
+                    ]
+                },
+                { 
+                    id: 1002, 
+                    clienteId: 1, 
+                    data: '2026-01-23', 
+                    status: 'em_processamento', 
+                    total: 2949.96,
+                    items: [
+                        { produtoId: 4, quantidade: 2, preco: 699.99 },
+                        { produtoId: 3, quantidade: 3, preco: 449.99 }
+                    ]
+                },
+                { 
+                    id: 1003, 
+                    clienteId: 1, 
+                    data: '2026-01-25', 
+                    status: 'enviado', 
+                    total: 1299.99,
+                    items: [
+                        { produtoId: 2, quantidade: 1, preco: 1299.99 }
+                    ]
+                }
+            ]
+        };
+
+        // Componente de Login
+        const LoginScreen = ({ onLogin }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [showDemo, setShowDemo] = useState(true);
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const user = MOCK_DATA.users.find(u => u.email === email && u.password === password);
+                if (user) {
+                    onLogin(user);
+                } else {
+                    alert('Credenciais inválidas!');
+                }
+            };
+
+            return (
+                <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                        <div className="text-center mb-8">
+                            <div className="text-5xl mb-4">🏢</div>
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">Sistema B2B</h1>
+                            <p className="text-gray-600">Gestão de Pedidos Profissional</p>
+                        </div>
+
+                        {showDemo && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-semibold text-blue-900">🎯 Dados de Demonstração</h3>
+                                    <button onClick={() => setShowDemo(false)} className="text-blue-600 hover:text-blue-800">✕</button>
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                    <div>
+                                        <p className="font-semibold text-blue-800">Cliente:</p>
+                                        <p className="text-blue-700">📧 cliente@empresa.com</p>
+                                        <p className="text-blue-700">🔑 cliente123</p>
+                                    </div>
+                                    <div className="border-t border-blue-200 pt-2">
+                                        <p className="font-semibold text-blue-800">Administrador:</p>
+                                        <p className="text-blue-700">📧 admin@sistema.com</p>
+                                        <p className="text-blue-700">🔑 admin123</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="seu@email.com"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-300"
+                            >
+                                Entrar no Sistema
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // Componente Principal do Sistema
+        const SistemaB2B = () => {
+            const [user, setUser] = useState(null);
+            const [currentPage, setCurrentPage] = useState('catalogo');
+            const [products, setProducts] = useState(MOCK_DATA.products);
+            const [orders, setOrders] = useState(MOCK_DATA.orders);
+            const [cart, setCart] = useState([]);
+            const [searchTerm, setSearchTerm] = useState('');
+
+            if (!user) {
+                return <LoginScreen onLogin={setUser} />;
+            }
+
+            const handleLogout = () => {
+                setUser(null);
+                setCart([]);
+                setCurrentPage('catalogo');
+            };
+
+            const addToCart = (product) => {
+                const existing = cart.find(item => item.id === product.id);
+                if (existing) {
+                    setCart(cart.map(item => 
+                        item.id === product.id 
+                            ? { ...item, quantidade: item.quantidade + 1 }
+                            : item
+                    ));
+                } else {
+                    setCart([...cart, { ...product, quantidade: 1 }]);
+                }
+            };
+
+            const removeFromCart = (productId) => {
+                setCart(cart.filter(item => item.id !== productId));
+            };
+
+            const updateQuantity = (productId, quantidade) => {
+                if (quantidade <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    setCart(cart.map(item => 
+                        item.id === productId ? { ...item, quantidade } : item
+                    ));
+                }
+            };
+
+            const finalizarPedido = () => {
+                if (cart.length === 0) {
+                    alert('Carrinho vazio!');
+                    return;
+                }
+
+                const total = cart.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+                const newOrder = {
+                    id: orders.length + 1001,
+                    clienteId: user.id,
+                    data: new Date().toISOString().split('T')[0],
+                    status: 'em_processamento',
+                    total: total,
+                    items: cart.map(item => ({
+                        produtoId: item.id,
+                        quantidade: item.quantidade,
+                        preco: item.preco
+                    }))
+                };
+
+                setOrders([...orders, newOrder]);
+                setCart([]);
+                alert('Pedido realizado com sucesso! 🎉');
+                setCurrentPage('pedidos');
+            };
+
+            // Componente do Header
+            const Header = () => (
+                <header className="bg-white shadow-md sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 py-4">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-4">
+                                <div className="text-3xl">🏢</div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-800">Sistema B2B</h1>
+                                    <p className="text-sm text-gray-600">{user.empresa}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <div className="text-right">
+                                    <p className="font-semibold text-gray-800">{user.nome}</p>
+                                    <p className="text-xs text-gray-600">{user.role === 'admin' ? 'Administrador' : 'Cliente'}</p>
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                                >
+                                    Sair
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+            );
+
+            // Componente de Navegação
+            const Navigation = () => {
+                const navItems = user.role === 'admin' 
+                    ? [
+                        { id: 'catalogo', icon: '📦', label: 'Produtos' },
+                        { id: 'pedidos', icon: '📋', label: 'Todos Pedidos' },
+                        { id: 'clientes', icon: '👥', label: 'Clientes' },
+                        { id: 'relatorios', icon: '📊', label: 'Relatórios' }
+                    ]
+                    : [
+                        { id: 'catalogo', icon: '🛒', label: 'Catálogo' },
+                        { id: 'carrinho', icon: '🛍️', label: `Carrinho (${cart.length})` },
+                        { id: 'pedidos', icon: '📋', label: 'Meus Pedidos' }
+                    ];
+
+                return (
+                    <nav className="bg-gray-100 border-b border-gray-200">
+                        <div className="max-w-7xl mx-auto px-4">
+                            <div className="flex space-x-2 overflow-x-auto">
+                                {navItems.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setCurrentPage(item.id)}
+                                        className={`px-6 py-3 font-semibold whitespace-nowrap transition ${
+                                            currentPage === item.id
+                                                ? 'bg-white text-purple-600 border-b-2 border-purple-600'
+                                                : 'text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <span className="mr-2">{item.icon}</span>
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </nav>
+                );
+            };
+
+            // Página de Catálogo
+            const CatalogoPage = () => {
+                const filteredProducts = products.filter(p => 
+                    p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                return (
+                    <div className="max-w-7xl mx-auto px-4 py-8">
+                        <div className="mb-8">
+                            <h2 className="text-3xl font-bold text-gray-800 mb-4">Catálogo de Produtos</h2>
+                            <input
+                                type="text"
+                                placeholder="🔍 Buscar produtos..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full max-w-md px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredProducts.map(product => (
+                                <div key={product.id} className="bg-white rounded-xl shadow-lg card-hover overflow-hidden">
+                                    <div className="bg-gradient-to-br from-purple-100 to-blue-100 p-8 flex items-center justify-center">
+                                        <div className="text-6xl">{product.imagem}</div>
+                                    </div>
+                                    <div className="p-5">
+                                        <div className="text-xs font-semibold text-purple-600 mb-1">{product.categoria}</div>
+                                        <h3 className="font-bold text-lg text-gray-800 mb-2">{product.nome}</h3>
+                                        <p className="text-sm text-gray-600 mb-3">{product.descricao}</p>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="text-2xl font-bold text-green-600">
+                                                R$ {product.preco.toFixed(2)}
+                                            </div>
+                                            <div className={`text-xs px-2 py-1 rounded ${
+                                                product.estoque > 50 ? 'bg-green-100 text-green-800' : 
+                                                product.estoque > 20 ? 'bg-yellow-100 text-yellow-800' : 
+                                                'bg-red-100 text-red-800'
+                                            }`}>
+                                                {product.estoque} em estoque
+                                            </div>
+                                        </div>
+                                        {user.role !== 'admin' && (
+                                            <button
+                                                onClick={() => addToCart(product)}
+                                                className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition font-semibold"
+                                            >
+                                                Adicionar ao Carrinho
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Página de Carrinho
+            const CarrinhoPage = () => {
+                const total = cart.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+
+                return (
+                    <div className="max-w-4xl mx-auto px-4 py-8">
+                        <h2 className="text-3xl font-bold text-gray-800 mb-8">Meu Carrinho</h2>
+
+                        {cart.length === 0 ? (
+                            <div className="text-center py-16">
+                                <div className="text-6xl mb-4">🛒</div>
+                                <p className="text-xl text-gray-600">Seu carrinho está vazio</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-4 mb-8">
+                                    {cart.map(item => (
+                                        <div key={item.id} className="bg-white rounded-lg shadow-md p-6 flex items-center justify-between">
+                                            <div className="flex items-center space-x-4 flex-1">
+                                                <div className="text-4xl">{item.imagem}</div>
+                                                <div className="flex-1">
+                                                    <h3 className="font-bold text-gray-800">{item.nome}</h3>
+                                                    <p className="text-sm text-gray-600">{item.categoria}</p>
+                                                    <p className="text-lg font-bold text-green-600 mt-1">
+                                                        R$ {item.preco.toFixed(2)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-4">
+                                                <div className="flex items-center space-x-2">
+                                                    <button
+                                                        onClick={() => updateQuantity(item.id, item.quantidade - 1)}
+                                                        className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className="font-semibold w-12 text-center">{item.quantidade}</span>
+                                                    <button
+                                                        onClick={() => updateQuantity(item.id, item.quantidade + 1)}
+                                                        className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <div className="text-lg font-bold text-gray-800 w-32 text-right">
+                                                    R$ {(item.preco * item.quantidade).toFixed(2)}
+                                                </div>
+                                                <button
+                                                    onClick={() => removeFromCart(item.id)}
+                                                    className="text-red-500 hover:text-red-700 px-2"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-xl font-semibold text-gray-700">Total:</span>
+                                        <span className="text-3xl font-bold text-green-600">
+                                            R$ {total.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={finalizarPedido}
+                                        className="w-full gradient-bg text-white py-4 rounded-lg font-bold text-lg hover:opacity-90 transition"
+                                    >
+                                        Finalizar Pedido
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                );
+            };
+
+            // Página de Pedidos
+            const PedidosPage = () => {
+                const userOrders = user.role === 'admin' 
+                    ? orders 
+                    : orders.filter(o => o.clienteId === user.id);
+
+                const statusConfig = {
+                    'em_processamento': { label: 'Em Processamento', color: 'bg-yellow-100 text-yellow-800', icon: '⏳' },
+                    'enviado': { label: 'Enviado', color: 'bg-blue-100 text-blue-800', icon: '🚚' },
+                    'entregue': { label: 'Entregue', color: 'bg-green-100 text-green-800', icon: '✅' }
+                };
+
+                return (
+                    <div className="max-w-6xl mx-auto px-4 py-8">
+                        <h2 className="text-3xl font-bold text-gray-800 mb-8">
+                            {user.role === 'admin' ? 'Todos os Pedidos' : 'Meus Pedidos'}
+                        </h2>
+
+                        <div className="space-y-6">
+                            {userOrders.map(order => {
+                                const status = statusConfig[order.status];
+                                return (
+                                    <div key={order.id} className="bg-white rounded-lg shadow-lg p-6">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-800">Pedido #{order.id}</h3>
+                                                <p className="text-gray-600">Data: {new Date(order.data).toLocaleDateString('pt-BR')}</p>
+                                            </div>
+                                            <div className={`px-4 py-2 rounded-full font-semibold ${status.color}`}>
+                                                {status.icon} {status.label}
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t border-gray-200 pt-4">
+                                            <div className="space-y-2 mb-4">
+                                                {order.items.map((item, index) => {
+                                                    const product = products.find(p => p.id === item.produtoId);
+                                                    return (
+                                                        <div key={index} className="flex justify-between items-center">
+                                                            <div className="flex items-center space-x-2">
+                                                                <span className="text-2xl">{product?.imagem}</span>
+                                                                <span className="text-gray-700">{product?.nome}</span>
+                                                                <span className="text-gray-500">x{item.quantidade}</span>
+                                                            </div>
+                                                            <span className="font-semibold text-gray-800">
+                                                                R$ {(item.preco * item.quantidade).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                                                <span className="text-lg font-semibold text-gray-700">Total do Pedido:</span>
+                                                <span className="text-2xl font-bold text-green-600">
+                                                    R$ {order.total.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Página de Clientes (Admin)
+            const ClientesPage = () => {
+                const clientes = MOCK_DATA.users.filter(u => u.role === 'cliente');
+
+                return (
+                    <div className="max-w-6xl mx-auto px-4 py-8">
+                        <h2 className="text-3xl font-bold text-gray-800 mb-8">Gestão de Clientes</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {clientes.map(cliente => {
+                                const clienteOrders = orders.filter(o => o.clienteId === cliente.id);
+                                const totalCompras = clienteOrders.reduce((sum, o) => sum + o.total, 0);
+
+                                return (
+                                    <div key={cliente.id} className="bg-white rounded-lg shadow-lg p-6 card-hover">
+                                        <div className="text-4xl mb-4">👤</div>
+                                        <h3 className="font-bold text-xl text-gray-800 mb-2">{cliente.nome}</h3>
+                                        <p className="text-gray-600 mb-1">{cliente.empresa}</p>
+                                        <p className="text-sm text-gray-500 mb-4">{cliente.email}</p>
+                                        <div className="border-t border-gray-200 pt-4">
+                                            <div className="flex justify-between mb-2">
+                                                <span className="text-gray-600">Total de Pedidos:</span>
+                                                <span className="font-semibold">{clienteOrders.length}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Total em Compras:</span>
+                                                <span className="font-bold text-green-600">
+                                                    R$ {totalCompras.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Página de Relatórios (Admin)
+            const RelatoriosPage = () => {
+                const totalVendas = orders.reduce((sum, o) => sum + o.total, 0);
+                const totalPedidos = orders.length;
+                const ticketMedio = totalVendas / totalPedidos;
+
+                const vendasPorStatus = {
+                    'em_processamento': orders.filter(o => o.status === 'em_processamento').length,
+                    'enviado': orders.filter(o => o.status === 'enviado').length,
+                    'entregue': orders.filter(o => o.status === 'entregue').length
+                };
+
+                return (
+                    <div className="max-w-6xl mx-auto px-4 py-8">
+                        <h2 className="text-3xl font-bold text-gray-800 mb-8">Relatórios e Análises</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-lg p-6 text-white">
+                                <div className="text-4xl mb-2">💰</div>
+                                <h3 className="text-lg font-semibold mb-1">Total em Vendas</h3>
+                                <p className="text-3xl font-bold">R$ {totalVendas.toFixed(2)}</p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+                                <div className="text-4xl mb-2">📦</div>
+                                <h3 className="text-lg font-semibold mb-1">Total de Pedidos</h3>
+                                <p className="text-3xl font-bold">{totalPedidos}</p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+                                <div className="text-4xl mb-2">📊</div>
+                                <h3 className="text-lg font-semibold mb-1">Ticket Médio</h3>
+                                <p className="text-3xl font-bold">R$ {ticketMedio.toFixed(2)}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">Status dos Pedidos</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-gray-700">⏳ Em Processamento</span>
+                                        <span className="font-semibold">{vendasPorStatus.em_processamento} pedidos</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-3">
+                                        <div 
+                                            className="bg-yellow-500 h-3 rounded-full" 
+                                            style={{width: `${(vendasPorStatus.em_processamento/totalPedidos)*100}%`}}
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-gray-700">🚚 Enviado</span>
+                                        <span className="font-semibold">{vendasPorStatus.enviado} pedidos</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-3">
+                                        <div 
+                                            className="bg-blue-500 h-3 rounded-full" 
+                                            style={{width: `${(vendasPorStatus.enviado/totalPedidos)*100}%`}}
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-gray-700">✅ Entregue</span>
+                                        <span className="font-semibold">{vendasPorStatus.entregue} pedidos</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-3">
+                                        <div 
+                                            className="bg-green-500 h-3 rounded-full" 
+                                            style={{width: `${(vendasPorStatus.entregue/totalPedidos)*100}%`}}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">Produtos Mais Vendidos</h3>
+                            <div className="space-y-3">
+                                {products.slice(0, 5).map((product, index) => (
+                                    <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center space-x-3">
+                                            <span className="text-2xl font-bold text-gray-400">#{index + 1}</span>
+                                            <span className="text-2xl">{product.imagem}</span>
+                                            <span className="font-semibold text-gray-800">{product.nome}</span>
+                                        </div>
+                                        <span className="text-green-600 font-bold">R$ {product.preco.toFixed(2)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Renderização das páginas
+            const renderPage = () => {
+                switch (currentPage) {
+                    case 'catalogo':
+                        return <CatalogoPage />;
+                    case 'carrinho':
+                        return <CarrinhoPage />;
+                    case 'pedidos':
+                        return <PedidosPage />;
+                    case 'clientes':
+                        return <ClientesPage />;
+                    case 'relatorios':
+                        return <RelatoriosPage />;
+                    default:
+                        return <CatalogoPage />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    <Header />
+                    <Navigation />
+                    {renderPage()}
+                </div>
+            );
+        };
+
+        // Renderizar aplicação
+        ReactDOM.render(<SistemaB2B />, document.getElementById('root'));
+    </script>
+</body>
+</html>
